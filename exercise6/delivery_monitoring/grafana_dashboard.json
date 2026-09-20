@@ -1,0 +1,27 @@
+{
+  "dashboard": {
+    "uid": "delivery-ops",
+    "title": "Delivery Operations",
+    "tags": ["delivery"],
+    "timezone": "browser",
+    "refresh": "5s",
+    "time": {"from": "now-5m", "to": "now"},
+    "schemaVersion": 39,
+    "panels": [
+      {"id": 1, "type": "stat", "title": "Total Deliveries", "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+       "datasource": {"type": "prometheus", "uid": "prometheus"},
+       "targets": [{"refId": "A", "expr": "total_deliveries"}]},
+      {"id": 2, "type": "timeseries", "title": "Pending Deliveries", "gridPos": {"h": 6, "w": 9, "x": 6, "y": 0},
+       "datasource": {"type": "prometheus", "uid": "prometheus"},
+       "targets": [{"refId": "A", "expr": "pending_deliveries"}]},
+      {"id": 3, "type": "timeseries", "title": "On-the-Way Deliveries", "gridPos": {"h": 6, "w": 9, "x": 15, "y": 0},
+       "datasource": {"type": "prometheus", "uid": "prometheus"},
+       "targets": [{"refId": "A", "expr": "on_the_way_deliveries"}]},
+      {"id": 4, "type": "gauge", "title": "Average Delivery Time (s)", "gridPos": {"h": 7, "w": 12, "x": 0, "y": 6},
+       "datasource": {"type": "prometheus", "uid": "prometheus"},
+       "fieldConfig": {"defaults": {"unit": "s", "min": 0, "max": 60, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 30}]}}, "overrides": []},
+       "targets": [{"refId": "A", "expr": "rate(delivery_time_seconds_sum[1m]) / rate(delivery_time_seconds_count[1m])"}]}
+    ]
+  },
+  "overwrite": true
+}

@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Validate Docker') {
+            steps {
+                sh 'docker --version'
+                sh 'docker info > /dev/null'
+            }
+        }
+
+        stage('Copy configuration files') {
+            steps {
+                sh 'cp -r delivery_monitoring/* "$WORKSPACE"/ || true'
+                sh 'ls -l "$WORKSPACE"'
+            }
+        }
+
+        stage('Build and run metrics app') {
+            steps {
+                sh '''
+                  docker rm -f delivery-metrics || true
+                  docker run -d --name delivery-metrics -p 8000:8000 \
+                    -v "$WORKSPACE/delivery_metrics.py:/app/delivery_metrics.py" -w /app \
+                    python:3.12-slim sh -c "pip install --no-cache-dir prometheus-client && python delivery_metrics.py"
+                '''
+            }
+        }
+
+        stage('Start Prometheus and Grafana') {
+            steps {
+                sh '''
+                  docker rm -f prometheus grafana || true
+                  docker run -d --name prometheus -p 9090:9090 \
+                    -v "$WORKSPACE/prometheus.yml:/etc/prometheus/prometheus.yml" \
+                    -v "$WORKSPACE/alert_rules.yml:/etc/prometheus/alert_rules.yml" \
+                    prom/prometheus
+                  docker run -d --name grafana -p 3000:3000 grafana/grafana
+                '''
+            }
+        }
+    }
+}
