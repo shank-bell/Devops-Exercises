@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+
+    environment {
+        DEPLOY_DIR = '/var/jenkins_home/deploy/flask-app'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Preparing the environment...'
+                sh 'python3 --version'
+                sh 'python3 -c "import importlib.metadata as m; print(\'Flask\', m.version(\'flask\'))"'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('exercise9') {
+                    sh 'python3 -m unittest discover -s . -v'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'mkdir -p "$DEPLOY_DIR"'
+                sh 'cp exercise9/app.py exercise9/requirements.txt "$DEPLOY_DIR"/'
+                sh 'ls -l "$DEPLOY_DIR"'
+            }
+        }
+
+        stage('Run Application') {
+            steps {
+                // JENKINS_NODE_COOKIE stops Jenkins from killing the background process when the stage ends
+                sh '''
+                  pkill -f "python3 app.py" || true
+                  cd "$DEPLOY_DIR"
+                  JENKINS_NODE_COOKIE=dontKillMe nohup python3 app.py > app.log 2>&1 &
+                  sleep 3
+                '''
+            }
+        }
+
+        stage('Test Application') {
+            steps {
+                sh 'curl -sf http://localhost:5000/ | tee response.txt'
+                sh 'grep -q "Hello, Jenkins Multi-Stage Pipeline!" response.txt'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the stage logs above.'
+        }
+    }
+}
